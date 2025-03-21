@@ -15,6 +15,7 @@ const Header = () => {
       <nav className="flex gap-6 text-2xl text-gray-100">
         <a href="#" className="hover:text-white">Home</a>
         <a href="#about" className="hover:text-white">About</a>
+        <a href="/products" className="hover:text-white">Products</a>
         <a href="#contact" className="hover:text-white">Contact</a>
       </nav>
     </header>
