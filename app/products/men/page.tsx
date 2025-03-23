@@ -1,13 +1,24 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Header from '@/app/components/header'; // adjust the path if needed
+import React, { useEffect, useState, useCallback } from 'react';
+import Header from '@/app/components/header';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 
+interface Product {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  images: string[];
+  category: {
+    name: string;
+  };
+}
+
 const MenPage = () => {
-  const [products, setProducts] = useState<any[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -17,6 +28,9 @@ const MenPage = () => {
     const fetchProducts = async () => {
       try {
         const res = await fetch('https://api.escuelajs.co/api/v1/products');
+        if (!res.ok) {
+          throw new Error(`Failed to fetch products: ${res.status} ${res.statusText}`);
+        }
         const data = await res.json();
 
         setProducts(data);
@@ -25,11 +39,11 @@ const MenPage = () => {
 
         // Extract unique categories
         const categoryNames = Array.from(
-          new Set(data.map((product: any) => product.category.name))
+          new Set(data.map((product: Product) => product.category.name))
         );
         setCategories(['All', ...categoryNames]);
       } catch (err) {
-        setError('Failed to fetch products');
+        setError(err instanceof Error ? err.message : 'Failed to fetch products');
         setLoading(false);
       }
     };
@@ -37,7 +51,7 @@ const MenPage = () => {
     fetchProducts();
   }, []);
 
-  const handleCategoryChange = (category: string) => {
+  const handleCategoryChange = useCallback((category: string) => {
     setSelectedCategory(category);
 
     if (category === 'All') {
@@ -48,7 +62,7 @@ const MenPage = () => {
       );
       setFilteredProducts(filtered);
     }
-  };
+  }, [products]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -65,6 +79,7 @@ const MenPage = () => {
             value={selectedCategory}
             onChange={(e) => handleCategoryChange(e.target.value)}
             className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            aria-label="Filter by category"
           >
             {categories.map((category) => (
               <option key={category} value={category}>
@@ -95,18 +110,25 @@ const MenPage = () => {
               <div className="text-center text-gray-600">No products found.</div>
             ) : (
               <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredProducts.map((product) => (
+                {filteredProducts.map((product, index) => (
                   <div
                     key={product.id}
                     className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 flex flex-col"
                   >
                     <div className="relative h-56">
-                      <Image
-                        src={product.images[0]}
-                        alt={product.title}
-                        layout="fill"
-                        objectFit="cover"
-                      />
+                      {product.images && product.images[0] ? (
+                        <Image
+                          src={product.images[0]}
+                          alt={product.title}
+                          fill
+                          className="object-cover"
+                          priority={index < 3}
+                        />
+                      ) : (
+                        <div className="bg-gray-200 flex items-center justify-center h-full">
+                          <span className="text-gray-500">No Image</span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-6 flex flex-col flex-grow">
                       <h2 className="text-xl font-bold text-gray-800 mb-2">
